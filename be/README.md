@@ -1,186 +1,314 @@
-#Full-Stack Engineer
+# Solution & Implementation Guide
 
-## Build a Reliable Checkout and Rewards Service
+This document contains setup instructions, test execution details, and API documentation for the backend checkout and rewards service.
 
-You are building the backend for an ecommerce store. Customers create carts, add products, and check out. The store rewards purchasing activity by making a discount coupon available after every *n*th successfully placed order.
+---
 
-The basic endpoints are straightforward. The challenge is making the system behave predictably when requests are retried, multiple customers check out concurrently, inventory changes, or two operations compete for the same coupon.
+## Setup & Running
 
-We are evaluating how you reason about those situations—not how quickly you can generate CRUD code.
+### Prerequisites
 
-## Timebox
+- Node.js v18 or higher
+- npm v9 or higher
 
-Please spend **no more than 4–6 hours** on the assignment.
+### Install Dependencies
 
-We do not expect every production concern to be implemented. Prioritize the risks you consider most important, implement a coherent solution, and document what you intentionally deferred in `DECISIONS.md`.
-
-## Business Requirements
-
-### Products and inventory
-
-- A product has an ID, name, current unit price, and available inventory.
-- Seed at least five products. Include at least one product with limited inventory.
-- A cart may contain multiple products and quantities.
-- Invalid products or quantities must not silently enter a cart.
-- The system must not sell more inventory than is available.
-
-### Carts
-
-- A client can create a cart, add an item, change its quantity, remove an item, and view the cart.
-- Return useful prices and totals when viewing a cart.
-- A cart must not be checked out more than once.
-- Decide and document what happens when product price or availability changes after an item was added but before checkout.
-
-### Checkout and orders
-
-- Checkout validates the cart and, if successful, creates an order.
-- Clients may retry a checkout request because they timed out or did not receive the response. A retry must not accidentally create another order or charge inventory twice.
-- Concurrent checkout attempts must not oversell inventory.
-- An order must retain enough information to explain what the customer purchased and how its total was calculated, even if product data later changes.
-- Calculate money without floating-point rounding errors.
-- Return errors that are distinguishable and useful to an API client.
-
-No real payment integration is required. Treat successful checkout as payment success, or introduce a small payment abstraction/fake if it supports your design. Explain the choice.
-
-### Discount coupons
-
-- Configure the system with values `n` and `x`. For example, when `n = 5` and `x = 10`, every fifth successfully placed order makes one coupon for 10% off available.
-- An administrator can request coupon generation.
-- A coupon is generated only if the configured order milestone has been reached and a coupon has not already been generated for that milestone.
-- A valid coupon may be supplied at checkout.
-- A coupon can be redeemed only once.
-- A coupon must not be lost or consumed by a checkout that ultimately fails.
-- A coupon must not be redeemed successfully by two concurrent checkouts.
-- Discount calculations must be deterministic and must never make an order total negative.
-
-You will need to decide some coupon semantics that are not specified here. Make defensible choices and record them.
-
-### Administration and reporting
-
-Provide administrator operations to:
-
-1. Generate a coupon when an unrewarded milestone is eligible.
-2. Return a summary containing:
-   - successfully purchased quantity by product;
-   - gross revenue before discounts;
-   - total discounts granted;
-   - net revenue;
-   - coupons generated, available, and redeemed; and
-   - total successfully placed orders.
-
-The report should reconcile with the orders and coupons returned by your system. Repeated report requests must not mutate state.
-
-## API Design
-
-Design the HTTP API you believe best represents the domain. At minimum, it must support:
-
-- cart creation and retrieval;
-- adding, updating, and removing cart items;
-- checkout with an optional coupon;
-- retrieving an order;
-- administrator coupon generation; and
-- administrator reporting.
-
-Document each endpoint, request, response, expected status code, and important error case. You may provide an OpenAPI document, an API client collection, executable examples, or clear README documentation.
-
-Authentication and authorization do not need to be implemented. Clearly identify which operations you treat as administrative.
-
-## Persistence and Concurrency
-
-You may use a database, an embedded database, or an in-memory implementation.
-
-An in-memory implementation is acceptable only if it still demonstrates how you preserve the required invariants when requests overlap. Explain how the design would change with multiple application instances and a production database.
-
-We may exercise the service with concurrent requests and repeated requests. Tests that only call each endpoint once in a happy-path sequence will not be sufficient.
-
-## Required Deliverables
-
-### 1. Working service
-
-- Source code in the stack of your choice
-- Repeatable setup and run instructions
-- Seed data or migrations required to evaluate the service
-- No dependency on private services or credentials
-
-### 2. Automated tests
-
-Include focused tests for the business rules and failure modes you consider most important. We value a small number of meaningful tests over high superficial coverage.
-
-At least one test must exercise competing or repeated operations—not merely sequential happy paths.
-
-### 3. `DECISIONS.md`
-
-This is a required and heavily weighted part of the submission. Include:
-
-- the system invariants you identified;
-- ambiguities you found and the semantics you selected;
-- at least five material design decisions and alternatives considered;
-- your transaction, concurrency, and idempotency strategy;
-- money and rounding rules;
-- error-model choices;
-- what you implemented versus intentionally deferred;
-- how the design would evolve for multiple service instances and production scale;
-- how you used AI tools, including an example where you corrected, rejected, or materially redirected AI output; and
-- what you would examine first if given another two hours.
-
-For each material decision, a useful structure is:
-
-```markdown
-## Decision: [Title]
-
-**Context:** What correctness or design problem were you solving?
-
-**Options considered:** What credible alternatives did you consider?
-
-**Choice:** What did you choose?
-
-**Why:** What trade-offs, constraints, or failure modes drove the decision?
-
-**Consequences:** What becomes easier, harder, or deferred as a result?
+```bash
+npm install
 ```
 
-### 4. Repository history
+### Start Development Server
 
-Commit your work in meaningful increments. We do not grade the number of commits, but the history should help us understand how the solution developed.
+```bash
+npm run dev
+```
 
-## AI Use
+The server listens on `http://localhost:3000`.  
+Health check endpoint: `GET http://localhost:3000/health`
 
-You are encouraged to use ChatGPT, Codex, Claude, Copilot, or other AI tools. Using AI is not a shortcut we penalize; using generated code without validating its behavior is.
+### Run Automated Tests
 
-You are responsible for every line submitted. In the follow-up discussion, we may ask you to:
+```bash
+# Run the complete test suite (23 tests covering catalog, unit logic, failure modes, and race conditions)
+npm test
 
-- explain an invariant and show where it is enforced;
-- predict behavior under a concurrent or repeated request;
-- identify a weakness in your implementation;
-- change one business rule; or
-- debug a failing scenario with us.
+# Run specifically the concurrency test suite
+npm run test:concurrency
+```
 
-Do not include private AI transcripts. A concise account of how AI affected your approach belongs in `DECISIONS.md`.
+### Postman Collection
 
-## Evaluation
+A ready-to-import Postman Collection v2.1.0 file is included in this repository:
 
-We will evaluate:
+- File: `postman_collection.json`
+- Pre-configured with automatic variable chaining (`cartId`, `orderId`, `couponCode`), sample bodies, query/path parameters, and idempotency headers for all endpoints.
+- Import into Postman App via `File` -> `Import` -> select `postman_collection.json`.
 
-1. **Correctness and invariants** — orders, inventory, coupons, and reporting remain consistent.
-2. **Reasoning and judgment** — ambiguities and trade-offs are recognized and resolved deliberately.
-3. **Failure behavior** — retries, conflicts, validation failures, and concurrent operations have coherent outcomes.
-4. **Domain and API design** — responsibilities, state transitions, and error contracts are understandable.
-5. **Testing** — tests target meaningful risks and can expose incorrect implementations.
-6. **Code quality** — the implementation is focused, readable, and proportionate to the timebox.
-7. **Ownership of AI-assisted work** — the candidate can critique, explain, and modify what they submitted.
+---
 
-Frontend work is optional and will not compensate for an unreliable backend. If you add a frontend, keep it small and use it to demonstrate the backend behavior.
+## Architecture & Concurrency Strategy
 
-## Submission
+The service is written in TypeScript and Node.js using an in-memory data store with atomic state staging:
 
-Share a public or access-granted Git repository containing:
+1. **Non-preemptive transaction execution:** Checkouts execute inside `store.runTransaction`. In Node.js, synchronous JavaScript execution is non-preemptive. By running stock checks, validations, stock deductions, coupon redemptions, and order snapshots within a single synchronous transaction block, race conditions are avoided within a single process. If any item is out of stock, the transaction throws and all staged mutations are discarded.
+2. **Oversell protection:** Competing checkouts for limited inventory never result in negative stock. Requests exceeding stock fail with `409 Conflict (INSUFFICIENT_INVENTORY)`.
+3. **Idempotency:** The checkout endpoint accepts an `Idempotency-Key` header. If a client retries a request with the same key (e.g. after a network timeout), the service replays the original order response without double-charging inventory or creating duplicate orders.
+4. **Single-use coupons:** Coupons are redeemed once. If a checkout fails due to inventory or validation errors, the coupon remains available.
+5. **Integer money calculations:** All monetary amounts are handled as integer cents to eliminate floating-point precision issues.
 
-- source code;
-- setup and run instructions;
-- API documentation or executable examples;
-- automated tests; and
-- `DECISIONS.md`.
+For a detailed breakdown of invariants, edge cases, and multi-instance evolution, refer to `DECISIONS.md`.
 
-State the approximate time spent. If something is incomplete, tell us directly and explain how you would finish it.
+---
 
-Good luck—we are looking forward to discussing your reasoning.
+## API Reference
+
+### 1. Products
+
+#### `GET /api/products`
+
+Lists all seeded products with current available inventory.
+
+- **Status:** `200 OK`
+- **Response:**
+
+```json
+{
+    "data": [
+        {
+            "id": "prod-laptop",
+            "name": "Pro Laptop 15\"",
+            "priceInCents": 129900,
+            "inventory": 20,
+            "formattedPrice": "$1,299.00"
+        },
+        {
+            "id": "prod-limited-mousepad",
+            "name": "Limited Edition Desk Mat (Collector Item)",
+            "priceInCents": 4500,
+            "inventory": 2,
+            "formattedPrice": "$45.00"
+        }
+    ]
+}
+```
+
+---
+
+### 2. Carts
+
+#### `POST /api/carts`
+
+Creates a new active cart.
+
+- **Status:** `201 Created`
+- **Response:**
+
+```json
+{
+    "message": "Cart created successfully",
+    "data": {
+        "id": "c1f7b789-98bf-4c7b-b384-cb91e49f82d1",
+        "status": "ACTIVE",
+        "items": [],
+        "subtotalInCents": 0,
+        "formattedSubtotal": "$0.00"
+    }
+}
+```
+
+#### `GET /api/carts/:id`
+
+Retrieves cart items with subtotals recalculated against current catalog prices.
+
+- **Status:** `200 OK`
+
+#### `POST /api/carts/:id/items`
+
+Adds an item or increments its quantity in the cart.
+
+- **Request Body:**
+
+```json
+{
+    "productId": "prod-laptop",
+    "quantity": 1
+}
+```
+
+- **Status:** `200 OK`
+- **Error:** `409 Conflict` if requested quantity exceeds available stock.
+
+#### `PATCH /api/carts/:id/items/:productId`
+
+Updates the quantity of an item in the cart.
+
+- **Request Body:**
+
+```json
+{
+    "quantity": 2
+}
+```
+
+- **Status:** `200 OK`
+
+#### `DELETE /api/carts/:id/items/:productId`
+
+Removes an item from the cart.
+
+- **Status:** `200 OK`
+
+---
+
+### 3. Checkout & Orders
+
+#### `POST /api/carts/:id/checkout`
+
+Validates stock, applies optional coupon, deducts inventory, locks the cart, and creates an order record.
+
+- **Headers:** `Idempotency-Key: <string>` (optional, recommended for retry safety)
+- **Request Body:**
+
+```json
+{
+    "couponCode": "REWARD-5-ABCDE"
+}
+```
+
+- **Status:** `201 Created` (or `200 OK` on idempotent replay)
+- **Response:**
+
+```json
+{
+    "message": "Order placed successfully",
+    "data": {
+        "id": "ord-883a-4efb-...",
+        "orderNumber": 5,
+        "cartId": "c1f7b789-...",
+        "grossTotalInCents": 129900,
+        "discountInCents": 12990,
+        "netTotalInCents": 116910,
+        "formattedGrossTotal": "$1,299.00",
+        "formattedDiscount": "$129.90",
+        "formattedNetTotal": "$1,169.10",
+        "couponCodeApplied": "REWARD-5-ABCDE",
+        "items": [
+            {
+                "productId": "prod-laptop",
+                "productName": "Pro Laptop 15\"",
+                "unitPriceInCents": 129900,
+                "quantity": 1,
+                "totalPriceInCents": 129900,
+                "formattedUnitPrice": "$1,299.00",
+                "formattedTotalPrice": "$1,299.00"
+            }
+        ]
+    }
+}
+```
+
+#### `GET /api/orders/:id`
+
+Retrieves an order snapshot by ID.
+
+- **Status:** `200 OK`
+
+---
+
+### 4. Admin Operations
+
+#### `POST /api/admin/coupons/generate`
+
+Generates a discount coupon if an unrewarded milestone (every n-th order) has been reached.
+
+- **Status:** `201 Created`
+- **Response:**
+
+```json
+{
+    "message": "Milestone discount coupon generated successfully",
+    "data": {
+        "code": "REWARD-5-X9Y2A",
+        "discountPercent": 10,
+        "milestoneOrderNumber": 5,
+        "status": "AVAILABLE"
+    }
+}
+```
+
+- **Error:** `422 Unprocessable Entity` if no unrewarded milestone has been achieved.
+
+#### `GET /api/admin/reports/summary`
+
+Returns financial and inventory reconciliation data. Read-only and does not mutate state.
+
+- **Status:** `200 OK`
+- **Response:**
+
+```json
+{
+    "data": {
+        "productSales": [
+            {
+                "productId": "prod-laptop",
+                "productName": "Pro Laptop 15\"",
+                "quantitySold": 5,
+                "totalGrossInCents": 649500,
+                "formattedGrossRevenue": "$6,495.00"
+            }
+        ],
+        "grossRevenueInCents": 649500,
+        "totalDiscountsInCents": 12990,
+        "netRevenueInCents": 636510,
+        "formattedGrossRevenue": "$6,495.00",
+        "formattedTotalDiscounts": "$129.90",
+        "formattedNetRevenue": "$6,365.10",
+        "coupons": {
+            "generated": 1,
+            "available": 0,
+            "redeemed": 1
+        },
+        "totalOrdersPlaced": 5
+    }
+}
+```
+
+#### `POST /api/admin/config`
+
+Updates milestone parameters (n and x).
+
+- **Request Body:**
+
+```json
+{
+    "n": 5,
+    "x": 10
+}
+```
+
+- **Status:** `200 OK`
+
+---
+
+## Verification via cURL
+
+To test the basic flow manually:
+
+```bash
+# 1. Create a cart
+curl -s -X POST http://localhost:3000/api/carts
+
+# 2. Add item to cart
+curl -s -X POST http://localhost:3000/api/carts/<CART_ID>/items \
+  -H "Content-Type: application/json" \
+  -d '{"productId": "prod-laptop", "quantity": 1}'
+
+# 3. Checkout with idempotency key
+curl -s -X POST http://localhost:3000/api/carts/<CART_ID>/checkout \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: test-req-001" \
+  -d '{}'
+
+# 4. View admin summary report
+curl -s http://localhost:3000/api/admin/reports/summary
+```

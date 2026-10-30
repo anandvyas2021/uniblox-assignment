@@ -1,0 +1,437 @@
+{
+    "info": {
+        "_postman_id": "c1f7a8b2-4d3e-4b2a-8c9f-3d2e1b4a5f60",
+        "name": "Uniblox - eCommerce Checkout & Rewards API",
+        "description": "Postman collection covering all endpoints for the Uniblox eCommerce take-home assignment: catalog, cart lifecycle, concurrency-safe checkout with idempotency, milestone coupon generation, and admin reconciliation.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3000",
+            "type": "string"
+        },
+        {
+            "key": "cartId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "orderId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "couponCode",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "1. Health & Catalog",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/health",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["health"]
+                        },
+                        "description": "Check if the server is healthy and running."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Product Catalog",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "products"]
+                        },
+                        "description": "Lists all seeded products, prices in cents, inventory counts, and formatted prices."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "2. Cart Lifecycle",
+            "item": [
+                {
+                    "name": "1. Create New Cart",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    if (body.data && body.data.id) {",
+                                    "        pm.collectionVariables.set('cartId', body.data.id);",
+                                    "        console.log('Saved cartId:', body.data.id);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/carts",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "carts"]
+                        },
+                        "description": "Initializes a new empty cart and auto-saves the returned cartId into the collection variable."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2. Get Cart Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/carts/{{cartId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "carts", "{{cartId}}"]
+                        },
+                        "description": "Fetches cart items, itemized subtotal in cents, and formatted currency string."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "3. Add Item to Cart (Laptop)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"productId\": \"prod-laptop\",\n  \"quantity\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/carts/{{cartId}}/items",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "carts", "{{cartId}}", "items"]
+                        },
+                        "description": "Adds 1 unit of prod-laptop ($1,299.00) to the cart."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "4. Add Item to Cart (Headphones)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"productId\": \"prod-headphones\",\n  \"quantity\": 2\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/carts/{{cartId}}/items",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "carts", "{{cartId}}", "items"]
+                        },
+                        "description": "Adds 2 units of prod-headphones ($199.99 each) to the cart."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "5. Update Item Quantity (Headphones to 1)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"quantity\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/carts/{{cartId}}/items/prod-headphones",
+                            "host": ["{{baseUrl}}"],
+                            "path": [
+                                "api",
+                                "carts",
+                                "{{cartId}}",
+                                "items",
+                                "prod-headphones"
+                            ]
+                        },
+                        "description": "Updates quantity of prod-headphones in cart from 2 to 1."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "6. Remove Item from Cart (Headphones)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/carts/{{cartId}}/items/prod-headphones",
+                            "host": ["{{baseUrl}}"],
+                            "path": [
+                                "api",
+                                "carts",
+                                "{{cartId}}",
+                                "items",
+                                "prod-headphones"
+                            ]
+                        },
+                        "description": "Removes prod-headphones from the active cart."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "3. Checkout & Orders",
+            "item": [
+                {
+                    "name": "1. Checkout Cart (Standard)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201 || pm.response.code === 200) {",
+                                    "    const body = pm.response.json();",
+                                    "    if (body.data && body.data.id) {",
+                                    "        pm.collectionVariables.set('orderId', body.data.id);",
+                                    "        console.log('Saved orderId:', body.data.id);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "uniblox-checkout-req-001",
+                                "description": "Client-supplied idempotency key for network retry safety"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/carts/{{cartId}}/checkout",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "carts", "{{cartId}}", "checkout"]
+                        },
+                        "description": "Executes atomic checkout, deducts stock, locks cart, snapshots items, and auto-saves orderId."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2. Checkout Retry (Idempotency Replay Verification)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "uniblox-checkout-req-001",
+                                "description": "Exact same idempotency key as request 1"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/carts/{{cartId}}/checkout",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "carts", "{{cartId}}", "checkout"]
+                        },
+                        "description": "Re-sends checkout with the exact same Idempotency-Key. Returns HTTP 200 with cached order without deducting stock again."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "3. Checkout With Coupon Code",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201 || pm.response.code === 200) {",
+                                    "    const body = pm.response.json();",
+                                    "    if (body.data && body.data.id) {",
+                                    "        pm.collectionVariables.set('orderId', body.data.id);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "uniblox-checkout-req-002",
+                                "description": "Client idempotency key"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"couponCode\": \"{{couponCode}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/carts/{{cartId}}/checkout",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "carts", "{{cartId}}", "checkout"]
+                        },
+                        "description": "Applies milestone discount coupon (e.g. UNIBLOX-10-...) at checkout."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "4. Get Order by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders/{{orderId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "orders", "{{orderId}}"]
+                        },
+                        "description": "Fetches finalized order details including item snapshots, discount applied, and net total."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "4. Admin & Milestones",
+            "item": [
+                {
+                    "name": "1. Update Milestone Configuration",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"n\": 3,\n  \"x\": 10\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/config",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "admin", "config"]
+                        },
+                        "description": "Configures milestone n (orders count) and discount x (percentage)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2. Generate Milestone Coupon",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const body = pm.response.json();",
+                                    "    if (body.data && body.data.code) {",
+                                    "        pm.collectionVariables.set('couponCode', body.data.code);",
+                                    "        console.log('Saved couponCode:', body.data.code);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/coupons/generate",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "admin", "coupons", "generate"]
+                        },
+                        "description": "Evaluator/admin trigger: checks if order count reached milestone n, issues a single-use coupon, and auto-saves couponCode."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "3. Get Financial & Inventory Summary Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/reports/summary",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "admin", "reports", "summary"]
+                        },
+                        "description": "Returns reconciliation report: total orders, total product units sold, gross revenue, total discount amount, net revenue, active and redeemed coupons."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

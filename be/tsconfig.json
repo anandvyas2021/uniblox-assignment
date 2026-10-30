@@ -1,0 +1,29 @@
+{
+    "compilerOptions": {
+        // File Layout
+        "rootDir": "./",
+        "outDir": "./dist",
+
+        // Environment Settings
+        "module": "commonjs",
+        "target": "es2022",
+        "lib": ["ES2022"],
+        "types": ["node", "vitest/globals"],
+
+        // Other Outputs
+        "sourceMap": true,
+
+        // Stricter Typechecking Options
+        "noUncheckedIndexedAccess": true,
+        "exactOptionalPropertyTypes": true,
+
+        // Recommended Options
+        "strict": true,
+        "isolatedModules": true,
+        "moduleDetection": "force",
+        "skipLibCheck": true,
+        "esModuleInterop": true
+    },
+    "include": ["src/**/*.ts", "tests/**/*.ts"],
+    "exclude": ["node_modules", "dist"]
+}
